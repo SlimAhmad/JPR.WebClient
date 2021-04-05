@@ -1,0 +1,44 @@
+﻿@typeparam TItem
+<!-- Row -->
+<div class="row">
+    <!-- Datatables -->
+    <div class="col-xl-12 col-lg-12 mb-4">
+        <div class="card bg-gradient-dark">
+            <div class="card-header py-3 d-flex flex-row align-items-center bg-gradient-success justify-content-between">
+                <h6 class="m-0 font-weight-bold text-white">Invoice</h6>
+
+            </div>
+            <div class="table-responsive">
+                <table class="table align-items-center table-flush">
+                    <thead class="thead-light">
+                        <tr>
+                            @TableHeader
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @foreach (var item in Items)
+                        {
+            <tr>
+
+                @RowTemplate(item)
+            </tr>}
+
+
+
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-gradient-success"></div>
+        </div>
+    </div>
+</div>
+
+@code { [Parameter]
+    public RenderFragment TableHeader { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem> RowTemplate { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<TItem> Items { get; set; } }

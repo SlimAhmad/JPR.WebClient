@@ -1,0 +1,36 @@
+﻿@typeparam TItem
+
+<div class="@SizeCss ">
+    <div class="card mb-4 @BgColorCss">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-gradient-success">
+            <h6 class="m-0 font-weight-bold text-white-50">@Title</h6>
+            @Menue
+        </div>
+        <div class="card-body">
+            @if (Items != null)
+            {
+@foreach (var item in Items)
+{
+@BodyWithData(item)} }
+else
+{
+@Body       }
+
+        </div>
+        <div class="card-footer bg-gradient-success"></div>
+    </div>
+</div>
+
+@code { 
+
+    [Parameter] public string Title { get; set; }
+
+    [Parameter] public RenderFragment Menue { get; set; }
+    [Parameter] public RenderFragment<TItem> BodyWithData { get; set; }
+    [Parameter] public RenderFragment Body { get; set; }
+    [Parameter] public string BgColorCss { get; set; }
+    [Parameter] public string SizeCss { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<TItem> Items { get; set; }
+}

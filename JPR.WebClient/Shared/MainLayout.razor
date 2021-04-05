@@ -1,0 +1,58 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using Blazored.Toast.Configuration
+<AuthorizeView>
+    <Authorized>
+        <div id="wrapper">
+            <CascadingValue Value="@NavMenuCssClass">
+                <NavMenu />
+            </CascadingValue>
+            <div id="content-wrapper" class="d-flex flex-column">
+                <div id="content" class="bg-gradient-dark">
+                    <!-- TopBar -->
+                    <nav class="navbar navbar-expand navbar-light bg-navbar topbar mb-4 static-top bg-gray-100">
+                        <button id="sidebarToggleTop" class="btn btn-link rounded-circle mr-3" @onclick="(()=> ToggleNavMenu())">
+                            <i class="fa fa-bars text-black-50"></i>
+                        </button>
+                        <TopBar />
+                    </nav>
+                    <!-- Topbar -->
+                    <div class="container-fluid" id="container-wrapper">
+                        @Body
+                    </div>
+                </div>
+                <Footer />
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <a href="/">Login</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+<!-- Scroll to top -->
+<a class="scroll-to-top rounded bg-dark" href="#page-top">
+    <i class="fas fa-angle-up text-white-50"></i>
+</a>
+
+<BlazoredToasts Position="ToastPosition.BottomRight" Timeout="3"
+                IconType="IconType.FontAwesome"
+                SuccessClass="succces-toast-override"
+                SuccessIcon="fa fa-thumbs-up"
+                ErrorIcon="fa fa-bug">
+
+</BlazoredToasts>
+@code{ public async Task Logout()
+    {
+        await ((AuthStateProvider)AuthenticationStateProvider).MarkUserAsLoggedOut();
+        NavigationManager.NavigateTo("");
+    }
+    private bool collapseNavMenu = true;
+
+    public string NavMenuCssClass => collapseNavMenu ? null : "toggled";
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    } }

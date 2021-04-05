@@ -1,0 +1,60 @@
+﻿@using Components.Modals
+@inject ILocalStorageService localStorage
+<!-- TopBar -->
+<ul class="navbar-nav ml-auto">
+
+
+    <div class="topbar-divider d-none d-sm-block"></div>
+    <li class="nav-item dropdown no-arrow">
+        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown"
+           aria-haspopup="true" aria-expanded="false">
+            <i class="fas fa-user fa-lg fa-fw mr-2 text-black-50"></i>
+            <span class="ml-2 d-none d-lg-inline text-black-50 small">@FirstName @LastName</span>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+            <a class="dropdown-item" href="/profile">
+                <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                Profile
+            </a>
+
+
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" @onclick="ShowLogoutModal">
+                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                Logout
+            </a>
+        </div>
+    </li>
+</ul>
+<!-- Topbar -->
+
+@code { private bool collapseNavMenu = true;
+
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+
+    private string NavMenuCssClass => collapseNavMenu ? "sidebar-toggled" : null;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        FirstName = await localStorage.GetItemAsync<string>("FirstName");
+        LastName = await localStorage.GetItemAsync<string>("LastName");
+    }
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+
+    [CascadingParameter] public IModalService Modal { get; set; }
+
+    void ShowLogoutModal()
+    {
+        var options = new ModalOptions { UseCustomLayout = true, Position = ModalPosition.Center };
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(LogoutModal.Message), "Are you sure you want to Logout!!");
+        parameters.Add(nameof(LogoutModal.Title), "Notification");
+
+        Modal.Show<LogoutModal>("Custom Layout", parameters, options);
+    } }

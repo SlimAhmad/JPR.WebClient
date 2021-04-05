@@ -1,0 +1,239 @@
+﻿@inject AuthenticationStateProvider authenticationStateProvider
+@inject IToastService toastService
+@inject IProjectService projectService
+@inject IJSRuntime JS
+@using BrowserInterop.Extensions
+@using BrowserInterop.Geolocation
+@using JPR.WebClient.Components
+
+
+<div class="modal fade show d-block mt-5" tabindex="-1" role="dialog">
+    <div class="modal-backdrop fade show" @onclick="Cancel"></div>
+    <div class="modal-dialog @CssClass" style="z-index: 1050">
+        <!-- Pop it above the backdrop -->
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-dark">
+                <h5 class="modal-title text-white">@Title</h5>
+                <button type="button" class="close bg-transparent" aria-label="Close" @onclick="Close">
+                    <span aria-hidden="true" class="text-danger">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-12 p-5">
+                        <!-- Form Basic -->
+
+                        <div class="row">
+                            <div class="col-12">
+                                <EditForm Model="Project" OnSubmit="ValidateSubmit">
+                                    <div class="row">
+                                        <div class="col-4">
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">Project Name</label>
+                                                <InputText type="text" @bind-Value="Project.Title" class="form-control"
+                                                           placeholder="Enter email" />
+                                            </div>
+
+                                            <div class="form-group">
+
+                                                <label for="exampleInputEmail1">Date Commissioned</label>
+                                                <InputDate type="text" @bind-Value="Project.Commissioned" class="form-control"
+                                                           placeholder="Enter a user name" />
+                                            </div>
+
+                                            <div class="form-group  ">
+                                                <label for="exampleInputEmail1">Project Completion in %.</label>
+                                                <InputNumber type="email" @bind-Value="Project.Completion" class="form-control col-4"
+                                                             placeholder="Enter email" />
+                                            </div>
+
+
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">LGA.</label>
+                                                <input type="text" class="form-control col-10"
+                                                       placeholder="Enter LGA" />
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">Project Budget</label>
+                                                <InputNumber type="email" @bind-Value="Project.Budget" class="form-control"
+                                                             placeholder="Enter email" />
+                                            </div>
+
+
+                                        </div>
+                                        <div class="col-4">
+
+
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">Project Sector</label>
+                                                <InputSelect type="text" @bind-Value="Project.SectorId" class="form-control"
+                                                             placeholder="Select">
+                                                    @foreach (var sector in Sectors)
+                                                    {
+                                <option selected value="@sector.SectorId">@sector.SectorName</option>}
+
+                                                </InputSelect>
+
+                                            </div>
+                                            <div class="form-group ml-2 mt-2">
+                                                <label>Checkbox</label>
+                                                <div class="row m-2 mb-3">
+                                                    <div class="custom-control custom-checkbox">
+                                                        <InputCheckbox @bind-Value="Project.Status" type="checkbox" class="custom-control-input ml-1" id="customCheck2" />
+                                                        <label class="custom-control-label ml-1" for="customCheck2">Ongoing</label>
+                                                    </div>
+                                                    <div class="custom-control custom-checkbox">
+                                                        <InputCheckbox type="checkbox" @bind-Value="Project.Status" class="custom-control-input ml-1" id="customCheck3" />
+                                                        <label class="custom-control-label ml-1" for="customCheck3">Completed</label>
+                                                    </div>
+                                                    <div class="custom-control custom-checkbox">
+                                                        <input type="checkbox" class="custom-control-input ml-1" @bind-value="Project.Status">
+                                                        <label class="custom-control-label ml-1" for="customCheckDisabled1">
+                                                            Suspended
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="form-group mt-4">
+                                                <label for="exampleInputEmail1">Project Location</label>
+                                                <InputText type="text" @bind-Value="Project.Location" class="form-control"
+                                                           placeholder="Enter email" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">Timespan / Deadline of completion</label>
+                                                <InputDate type="text" @bind-Value="Project.Timespan" class="form-control"
+                                                           placeholder="Enter email" />
+
+                                            </div>
+
+                                        </div>
+                                        <div class="col-4">
+                                            <GoogleMapsComponent Latitude="@Latitude"
+                                                                 Longitude="@Longitude"
+                                                                 Zoom="3" EnableMap="@IsEnabled" Location="Jos" />
+
+                                            <div class="p-2">
+                                                <button type="submit" class="btn btn-primary btn-block">Submit</button>
+
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+
+
+                                </EditForm>
+                            </div>
+
+                        </div>
+
+
+
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+
+@code { [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; }
+
+    public double Longitude { get; set; }
+
+    public double Latitude { get; set; }
+
+    [Parameter]
+    public ProjectsApiModel Project { get; set; }
+
+    public bool IsEnabled { get; set; }
+    [Parameter]
+    public List<SectorsApiModel> Sectors { get; set; }
+
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; }
+
+    public WindowNavigatorGeolocation Geolocation;
+    public GeolocationPosition GeolocationPosition;
+
+    public async Task Close() => await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+
+    public async Task Cancel() => await BlazoredModal.CancelAsync();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var window = await JS.Window();
+        var navigator = await window.Navigator();
+        Geolocation = navigator.Geolocation;
+        await GetGeoLocation();
+    }
+
+    private async Task GetGeoLocation()
+    {
+        GeolocationPosition = (await Geolocation.GetCurrentPosition(new PositionOptions()
+        {
+            EnableHighAccuracy = true,
+            MaximumAgeTimeSpan = TimeSpan.FromHours(1),
+            TimeoutTimeSpan = TimeSpan.FromHours(1),
+        })).Location;
+        if (GeolocationPosition.Coords.Longitude != 0 && GeolocationPosition.Coords.Latitude != 0 && Project.Location == null)
+        {
+            IsEnabled = true;
+            Longitude = GeolocationPosition.Coords.Longitude;
+            Latitude = GeolocationPosition.Coords.Latitude;
+        }
+        else
+        {
+            IsEnabled = true;
+            Longitude = Project.Longitude;
+            Latitude = Project.Latitude;
+
+        }
+
+
+
+    }
+
+    private async Task<bool> ValidateSubmit()
+    {
+        //assume that user is valid
+        //call an API
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+        if (Project.Id != 0)
+            await projectService.UpdateProjectAsync(token, Project);
+        else
+        {
+
+            var p = new ProjectsApiModel()
+            {
+                Budget = Project.Budget,
+                Latitude = Latitude,
+                Longitude = Longitude,
+                SectorId = Project.SectorId,
+                Location = Project.Location,
+                Title = Project.Title,
+                Commissioned = Project.Commissioned,
+                Completion = Project.Completion,
+                Status = Project.Status,
+                Timespan = Project.Timespan
+
+            };
+            await projectService.AddProjectAsync(token, p);
+        }
+
+
+
+        await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+        toastService.ShowSuccess("Successfully submittted");
+
+        return await Task.FromResult(true);
+    } }

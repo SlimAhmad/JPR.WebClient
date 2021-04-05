@@ -1,0 +1,211 @@
+﻿@page  "/contractor"
+@inject IContractorService ContractorService
+@inject IProjectService projectService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+@using System.Security.Claims
+@using Components.Modals
+@inject IFileReaderService fileReaderService;
+<!-- Container Fluid-->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-success">DataTables</h1>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="index" class="text-success">Home</a></li>
+        <li class="breadcrumb-item">Tables</li>
+        <li class="breadcrumb-item active" aria-current="page">DataTables</li>
+    </ol>
+</div>
+
+
+<SpinLoader IsLoading="isLoading">
+    <LoadingTemplate>
+        <div class="col-12" style="vertical-align:middle">
+            <br /><br />
+            <Chase Center="true" Color="#ffff" Size="70px"></Chase>
+        </div>
+    </LoadingTemplate>
+    <ContentTemplate>
+        <button class="btn" @onclick="(()=> OpenEditContractorModal(Contractor))">
+            <i class="fa fa-edit fa-lg fa-fw text-white ml-2 mt-3"></i>
+            <p class="text-white ml-2 mt-1 text-sm-left small text-success">Add A Contractor</p>
+        </button>
+        @if (FilteredContractorList != null)
+        {
+<GridViewTemplate Items="FilteredContractorList" ReloadList="IsGridViewFiltered">
+    <GridColumns>
+        <GridColumnTemplatedCompnent ColumnTitle=""></GridColumnTemplatedCompnent>
+
+        <GridColumnTemplatedCompnent ColumnTitle="Company Name"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Company Name"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Phone Number"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Phone Number"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Address"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Address"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="RC Number"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "RC Number"))"></GridColumnTemplatedCompnent>
+
+        <GridColumnTemplatedCompnent ColumnTitle="Actions"></GridColumnTemplatedCompnent>
+
+    </GridColumns>
+    <GridRow Context="Contractor">
+        <td><img src="@url/@Contractor.LogoName" class="img-profile rounded-circle" style="max-width: 40px" /></td>
+        <td>@Contractor.ContractorName</td>
+        <td>@Contractor.PhoneNumber</td>
+        <td>@Contractor.Address</td>
+        <td>@Contractor.RcNumber</td>
+        <td>
+            <a @onclick="(()=> DeleteContractorModal(Contractor))"><i class="fas fa-trash fa-1x fa-sm fa-fw text-danger"></i></a>
+            <a @onclick="(()=> OpenEditContractorModal(Contractor))" data-toggle="modal" data-target="#Modal"> <i class="fa fa-user-edit fa-1x fa-sm fa-fw text-primary"></i></a>
+        </td>
+
+    </GridRow>
+</GridViewTemplate>}
+    </ContentTemplate>
+</SpinLoader>
+
+
+@code { public ContractorApiModel Contractor { get; set; }
+    public List<ContractorApiModel> Contractors { get; set; }
+    public List<ContractorApiModel> FilteredContractorList { get; set; }
+    public List<ProjectsApiModel> Projects { get; set; }
+    bool isLoading = true;
+    bool isInverted = false;
+    public bool IsGridViewFiltered { get; set; } = true;
+    public string url { get; set; } = "https://localhost:5030/Media/Logo";
+    [CascadingParameter]
+    public IModalService Modal { get; set; }
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Contractor = new ContractorApiModel();
+        await LoadContractors();
+        await LoadProjects();
+
+    }
+    private async Task LoadContractors()
+    {
+
+
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+        Contractors = FilteredContractorList = await ContractorService.GetContractorsAsync(token);
+        isLoading = false;
+        StateHasChanged();
+
+    }
+    private async Task LoadProjects()
+    {
+
+        await Task.Delay(500);
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+        Projects = await projectService.GetProjectsAsync(token);
+        isLoading = false;
+        StateHasChanged();
+
+    }
+
+
+    async Task OpenEditContractorModal(ContractorApiModel model)
+    {
+
+        var options = new ModalOptions { UseCustomLayout = true, Position = ModalPosition.Center, ContentScrollable = true };
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(EditContractorModal.Title), "Edit Project");
+        parameters.Add(nameof(EditContractorModal.CssClass), "modal-lg");
+        parameters.Add(nameof(EditContractorModal.Contractor), model);
+        parameters.Add(nameof(EditContractorModal.Projects), Projects);
+        var modal = Modal.Show<EditContractorModal>("Custom Layout", parameters, options);
+        var result = await modal.Result;
+        await LoadProjects();
+        await LoadContractors();
+        var filteredContractor = Contractors.Where(x => x.ContractorName == model.ContractorName).FirstOrDefault();
+
+        if (result.Cancelled)
+        {
+            return;
+        }
+        else
+        {
+            await UploadModal(model, filteredContractor);
+        }
+    }
+
+    #region HeplerMethods
+
+    private async Task UploadModal(ContractorApiModel model, ContractorApiModel filteredContractor)
+    {
+        var paramss = new ModalParameters();
+        if (model.Id == 0)
+        {
+            Contractor = new ContractorApiModel();
+            paramss.Add(nameof(UploadContractorModal.Contractor), model);
+            var option = new ModalOptions { UseCustomLayout = true, ContentScrollable = true };
+
+            paramss.Add(nameof(UploadContractorModal.CssClass), "modal-lg");
+            paramss.Add(nameof(UploadContractorModal.Title), "Upload Logo");
+
+            var confirmationModal = Modal.Show<UploadContractorModal>("Upload Logo", paramss, option);
+            var results = await confirmationModal.Result;
+
+
+        }
+        else if (model.Id > 0)
+        {
+            paramss.Add(nameof(UploadContractorModal.Contractor), filteredContractor);
+            var option = new ModalOptions { UseCustomLayout = true, ContentScrollable = true };
+
+            paramss.Add(nameof(UploadContractorModal.CssClass), "modal-lg");
+            paramss.Add(nameof(UploadContractorModal.Title), "Upload Logo");
+            var confirmationModal = Modal.Show<UploadContractorModal>("Upload Logo", paramss, option);
+            var results = await confirmationModal.Result;
+        }
+
+
+        await LoadProjects();
+        await LoadContractors();
+    }
+    #endregion
+
+    async Task DeleteContractorModal(ContractorApiModel model)
+    {
+
+        var options = new ModalOptions { UseCustomLayout = true, Position = ModalPosition.Center };
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(DeleteModal.Message), "Are you sure you want to delete this project!!");
+        parameters.Add(nameof(DeleteModal.Title), "Alert");
+        parameters.Add(nameof(DeleteModal.Contractor), model);
+        parameters.Add(nameof(DeleteModal.Item), ItemDelete.Contractor);
+        var modal = Modal.Show<DeleteModal>
+    ("Custom Layout", parameters, options);
+        await modal.Result;
+        await LoadProjects();
+        await LoadContractors();
+
+    }
+
+    private void OnUserSearchTextChanged(ChangeEventArgs changeEventArgs, string columnTitle)
+    {
+        string searchText = changeEventArgs.Value.ToString();
+        IsGridViewFiltered = true;
+
+        switch (columnTitle)
+        {
+            case "Address":
+                FilteredContractorList = Contractors.Where(x => x.Address.ToString().Contains(searchText)).ToList();
+                break;
+            case "Company Name":
+                FilteredContractorList = Contractors.Where(x => x.ContractorName.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "RC Number":
+                FilteredContractorList = Contractors.Where(x => x.RcNumber.ToString().Contains(searchText)).ToList();
+                break;
+            case "Phone Number":
+                FilteredContractorList = Contractors.Where(x => x.PhoneNumber.ToString().Contains(searchText)).ToList();
+                break;
+
+            default:
+                Console.WriteLine("Default case");
+                break;
+        }
+    } }

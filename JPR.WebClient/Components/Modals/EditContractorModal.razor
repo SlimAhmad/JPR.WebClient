@@ -1,0 +1,133 @@
+﻿@inject AuthenticationStateProvider authenticationStateProvider
+@inject IToastService toastService
+@inject IContractorService ContractorService
+
+<div class="modal fade show d-block mt-5" tabindex="-1" role="dialog">
+    <div class="modal-backdrop fade show " @onclick="Cancel"></div>
+    <div class="modal-dialog @CssClass" style="z-index: 1050">
+        <!-- Pop it above the backdrop -->
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-dark">
+                <h5 class="modal-title text-white">@Title</h5>
+                <button type="button" class="close bg-transparent" aria-label="Close" @onclick="Cancel">
+                    <span aria-hidden="true" class="text-danger">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-12 m-5 ">
+                        <!-- Form Basic -->
+
+                        <div class="row">
+                            <div class="col-10">
+                                <EditForm Model="Contractor" OnSubmit="ValidateSubmit">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">Contractor Name</label>
+                                                <InputText type="text" @bind-Value="Contractor.ContractorName" class="form-control"
+                                                           placeholder="Enter Name" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">RC Number</label>
+                                                <InputText type="text" @bind-Value="Contractor.RcNumber" class="form-control"
+                                                           placeholder="Enter RC" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">Company Address</label>
+                                                <InputText type="text" @bind-Value="Contractor.Address" class="form-control"
+                                                           placeholder="Enter an Address" />
+                                            </div>
+
+
+
+
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">Project Sector</label>
+                                                <InputSelect type="text" @bind-Value="Contractor.ProjectId" class="form-control">
+                                                    <option></option>
+                                                    @foreach (var project in Projects)
+                                                    {
+
+                                <option selected value="@project.Id">@project.Title</option>}
+
+                                                </InputSelect>
+
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="exampleInputEmail1">Phone Number</label>
+                                                <InputText type="text" @bind-Value="Contractor.PhoneNumber" class="form-control"
+                                                           placeholder="Enter Phone Number" />
+                                            </div>
+
+                                            <div class="p-2">
+                                                <button type="submit" class="btn btn-primary btn-block">Submit</button>
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+
+                                </EditForm>
+
+
+                            </div>
+
+                        </div>
+
+
+
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+
+@code { [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; }
+
+    [Parameter]
+    public ContractorApiModel Contractor { get; set; }
+    [Parameter]
+    public List<ProjectsApiModel> Projects { get; set; }
+
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; }
+
+
+    public async Task Close() => await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+
+    public async Task Cancel() => await BlazoredModal.CancelAsync();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(10);
+    }
+
+    private async Task<bool> ValidateSubmit()
+    {
+        //assume that user is valid
+        //call an API
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+        if (Contractor.Id != 0)
+            await ContractorService.UpdateContractorAsync(token, Contractor);
+        else
+            await ContractorService.AddContractorAsync(token, Contractor);
+
+        await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+        toastService.ShowSuccess("Successfully submittted");
+
+        return await Task.FromResult(true);
+    } }

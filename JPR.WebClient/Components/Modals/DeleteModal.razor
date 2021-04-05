@@ -1,0 +1,84 @@
+﻿@inject AuthenticationStateProvider authenticationStateProvider
+@inject IToastService toastService
+@inject NavigationManager Navigator
+@inject IReportService reportService
+@inject IProjectService projectService
+@inject IContractorService contractorService
+@inject ISectorService sectorService
+@inject ICategoryService categoryService
+@inject ISectorTypeService sectorTypeService
+<div class="modal fade show d-block mt-5" tabindex="-1" role="dialog">
+    <div class="modal-backdrop fade show" @onclick="Cancel"></div>
+    <div class="modal-dialog @CssClass" style="z-index: 1050">
+        <!-- Pop it above the backdrop -->
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-dark">
+                <h5 class="modal-title text-white">@Title</h5>
+                <button type="button" class="close bg-transparent" aria-label="Close" @onclick="Close">
+                    <span aria-hidden="true" class="text-danger">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>@Message</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" @onclick="(()=> DeleteUser(Item))">Yes</button>
+                <button type="button" class="btn btn-primary" @onclick="Close">No</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code { [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; }
+
+    [Parameter] public string Message { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string CssClass { get; set; }
+    [Parameter] public ItemDelete Item { get; set; }
+    [Parameter] public RegisterCredentialsApiModel Person { get; set; }
+    [Parameter] public ReportApiModel Report { get; set; }
+    [Parameter] public ProjectsApiModel Project { get; set; }
+    [Parameter] public ContractorApiModel Contractor { get; set; }
+    [Parameter] public CategoryApiModel Category { get; set; }
+    [Parameter] public SectorTypeApiModel SectorType { get; set; }
+    [Parameter] public SectorsApiModel Sector { get; set; }
+    async Task Close() => await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+    async Task Cancel() => await BlazoredModal.CancelAsync();
+
+    public async Task<bool> DeleteUser(ItemDelete item)
+    {
+
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+        switch (item)
+        {
+            case ItemDelete.User:
+                await userService.DeleteUser(token, Person);
+                break;
+            case ItemDelete.Report:
+                await reportService.DeleteReportAsync(token, Report);
+                break;
+            case ItemDelete.Contractor:
+                await contractorService.DeleteContractorAsync(token, Contractor);
+                break;
+            case ItemDelete.Project:
+                await projectService.DeleteProjectAsync(token, Project);
+                break;
+            case ItemDelete.Sector:
+                await sectorService.DeleteSectorAsync(token, Sector);
+                break;
+            case ItemDelete.PSectorType:
+                await sectorTypeService.DeleteSectorTypeAsync(token, SectorType);
+                break;
+            case ItemDelete.PCategory:
+                await categoryService.DeleteCategoryAsync(token, Category);
+                break;
+            default:
+                Console.WriteLine("Default case");
+                break;
+        }
+        await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+
+        toastService.ShowSuccess("Sucessfully deleted the user");
+
+        return await Task.FromResult(true);
+    } }

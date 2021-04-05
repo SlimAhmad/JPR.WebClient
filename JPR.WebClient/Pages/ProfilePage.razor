@@ -1,0 +1,19 @@
+﻿@page "/profile"
+<!-- Container Fluid-->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-success">Profile</h1>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="index" class="text-gray-600">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page"><a href="/profile" class="text-success">Profile</a></li>
+    </ol>
+</div>
+
+<InputFile id="drop" hidden OnChange="Upload" />
+<button for="drop" onclick="document.getElementById('drop').click()">Click</button>
+
+@code { ElementReference inputRef;
+
+    public void Upload(InputFileChangeEventArgs e)
+    {
+
+    } }

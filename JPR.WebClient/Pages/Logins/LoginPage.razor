@@ -1,0 +1,103 @@
+﻿
+@page "/"
+@using JPR.WebClient
+@using jpr.core
+@inject IUserService userService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+@using System.Security.Claims
+<!-- Login Content -->
+<div class="container-login">
+    <div class="row justify-content-center ">
+        <div class="col-xl-10 col-lg-12 col-md-9">
+            <div class="card shadow-sm my-5 ">
+                <div class="card-body p-0">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="login-form">
+
+                                <div class="text-center">
+                                    <img src="icons/Logo.png" width="100" class="justify-content-center" />
+                                    <h1 class="h4 text-gray-900 mb-4">JPR-Management Dashboard</h1>
+                                </div>
+                                <EditForm class="user" Model="@model" OnValidSubmit="@ValidateUser">
+                                    <div class="form-group">
+                                        <input @bind="model.UsernameOrEmail" class="form-control" id="exampleInputEmail" aria-describedby="emailHelp"
+                                               placeholder="Enter Email Address">
+                                    </div>
+                                    <div class="form-group">
+                                        <input @bind="model.Password" type="password" class="form-control" id="exampleInputPassword" placeholder="Password">
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="custom-control custom-checkbox small" style="line-height: 1.5rem;">
+                                            <input type="checkbox" class="custom-control-input" id="customCheck">
+                                            <label class="custom-control-label" for="customCheck">
+                                                Remember us
+                                                Me
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <button class="btn bg-gradient-secondary btn-block text-white">Login</button>
+                                    </div>
+                                    <hr>
+
+                                </EditForm>
+                                <hr>
+                                <div class="text-center">
+                                    <a class="font-weight-bold small" href="register.html">Create an Account!</a>
+                                </div>
+                                <div class="text-center">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@code{ private LoginCredentialsApiModel model;
+    public string LoginMesssage { get; set; }
+
+    ClaimsPrincipal claimsPrincipal;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new LoginCredentialsApiModel();
+
+
+        claimsPrincipal = (await authenticationStateTask).User;
+
+        if (claimsPrincipal.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/index");
+        }
+        {
+            model.UsernameOrEmail = "";
+            model.Password = "";
+        }
+    }
+
+    private async Task<bool> ValidateUser()
+    {
+        //assume that user is valid
+        //call an API
+
+        var returnedUser = await userService.LoginAsync(model);
+
+        if (returnedUser.Response.Email != null)
+        {
+            await ((AuthStateProvider)authenticationStateProvider).MarkUserAsLoggedIn(returnedUser.Response);
+            NavigationManager.NavigateTo("/index");
+        }
+        else
+        {
+            LoginMesssage = "Invalid username or password";
+        }
+
+        return await Task.FromResult(true);
+    } }

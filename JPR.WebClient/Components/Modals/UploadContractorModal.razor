@@ -1,0 +1,155 @@
+﻿@inject IModalService ModalService
+@inject IFileReaderService fileReaderService
+@using System.IO
+@inject IToastService toastService
+@inject IContractorService contractorService
+@inject AuthenticationStateProvider authenticationStateProvider
+@using System.Linq
+@using System.Threading
+@implements IDisposable
+
+<div class="modal fade show d-block mt-5" tabindex="-1" role="dialog">
+    <div class="modal-backdrop fade show" @onclick="Cancel"></div>
+    <div class="modal-dialog @CssClass" style="z-index: 1050">
+        <!-- Pop it above the backdrop -->
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-dark">
+                <h5 class="modal-title text-white">@Title</h5>
+                <button type="button" class="close bg-transparent" aria-label="Close" @onclick="Cancel">
+                    <span aria-hidden="true" class="text-danger">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <h3>File Upload Component</h3>
+
+                    <EditForm EditContext="editContext" OnValidSubmit="UploadFileAsync">
+                        <DataAnnotationsValidator />
+
+                        @if (ImageDataUri != null)
+                        {
+        <p>
+            Uploaded image:<br />
+            <img id="image-uploaded" src="@ImageDataUri" width="80" height="80" class="img-profile rounded-circle" />
+        </p>}
+
+                        <div class="form-group">
+                            Picture: <InputFile OnChange="LoadImage" class="form-control" />
+                            <ValidationMessage For="() => Upload.FileInfo" />
+                            <p>@DisplayError</p>
+                            @{ var progressCss = "progress " + (displayProgress ? "" : "d-none");
+                                var progressWidthStyle = progressPercent + "%"; }
+
+                            <div class="@progressCss">
+                                <div class="progress-bar" role="progressbar" style="width:@progressWidthStyle" area-valuenow="@progressPercent" aria-minvalue="0" aria-maxvalue="100"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit">Submit</button>
+                    </EditForm>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+@code { public long MaxFileSize { get; set; } = 1024 * 1024 * 15;
+    public string ImageDataUri { get; set; }
+    public IModalService Modal { get; set; }
+    [Parameter]
+    public ContractorApiModel Contractor { get; set; }
+    [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; }
+
+    private bool displayProgress;
+    private EditContext editContext;
+    private FileUpload Upload;
+    private CancellationTokenSource cancelation;
+    private int progressPercent;
+    [Parameter]
+    public string Title { get; set; }
+    public string DisplayError { get; set; }
+    [Parameter]
+    public string CssClass { get; set; }
+    async Task Close() => await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+    async Task Cancel() => await BlazoredModal.CancelAsync();
+
+
+
+    protected override void OnInitialized()
+    {
+        cancelation = new CancellationTokenSource();
+        Upload = new FileUpload();
+        editContext = new EditContext(Upload);
+    }
+
+
+
+    async Task LoadImage(InputFileChangeEventArgs e)
+    {
+
+
+        editContext.NotifyFieldChanged(FieldIdentifier.Create(() => Upload.FileInfo));
+
+        var imageFile = await e.File.RequestImageFileAsync(e.File.ContentType, 640, 630);
+        var buffer = new byte[imageFile.Size];
+        using var fileStream = imageFile.OpenReadStream(imageFile.Size);
+        if (imageFile.Size > 512000)
+        {
+            return;
+        }
+        using var memoryStream = new MemoryStream();
+        await fileStream.CopyToAsync(memoryStream);
+
+        ImageDataUri = $"data:{e.File.ContentType};base64,{Convert.ToBase64String(memoryStream.ToArray())}";
+        Upload.Picture = new MemoryStream(memoryStream.ToArray());
+        Upload.FileInfo = e.File;
+    }
+
+    private async Task UploadFileAsync()
+    {
+        if (Upload.FileInfo.Size > 512000)
+        {
+            DisplayError = "Images less than 500kb Allowed";
+            return;
+        }
+
+        using var file = File.OpenWrite(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+        var stream = Upload.FileInfo.OpenReadStream();
+
+        var buffer = new byte[4 * 1096];
+        int bytesRead;
+        double totalRead = 0;
+
+        displayProgress = true;
+
+        while ((bytesRead = await stream.ReadAsync(buffer, cancelation.Token)) != 0)
+        {
+            totalRead += bytesRead;
+            await file.WriteAsync(buffer, cancelation.Token);
+
+
+            progressPercent = (int)((totalRead / Upload.FileInfo.Size) * 100);
+
+            StateHasChanged();
+        }
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+
+        var respone = await contractorService.UploadogoAsync(token, Upload.Picture, Contractor, Upload.FileInfo.Name);
+
+        displayProgress = false;
+        await Task.Delay(1000);
+        await BlazoredModal.CloseAsync();
+        toastService.ShowSuccess("Successfully Uploaded");
+    }
+
+
+    public void Dispose()
+    {
+        cancelation.Cancel();
+    } }

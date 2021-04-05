@@ -1,0 +1,38 @@
+﻿@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="modal fade show d-block mt-5" tabindex="-1" role="dialog">
+    <div class="modal-backdrop fade show" @onclick="Cancel"></div>
+    <div class="modal-dialog" style="z-index: 1050">
+        <!-- Pop it above the backdrop -->
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-dark">
+                <h5 class="modal-title text-white">@Title</h5>
+                <button type="button" class="bg-danger" aria-label="Close" @onclick="Close">
+                    <span aria-hidden="true" class="text-white-50">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>@Message</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="Cancel">Close</button>
+                <a @onclick="(()=> Logout())" class="btn btn-primary">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code { [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; }
+
+    [Parameter] public string Message { get; set; }
+    [Parameter] public string Title { get; set; }
+    async Task Cancel() => await BlazoredModal.CancelAsync();
+    async Task Close() => await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+
+
+    public async Task Logout()
+    {
+        await ((AuthStateProvider)AuthenticationStateProvider).MarkUserAsLoggedOut();
+        NavigationManager.NavigateTo("");
+    } }

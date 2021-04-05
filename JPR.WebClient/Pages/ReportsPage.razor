@@ -1,0 +1,163 @@
+﻿@page  "/reports"
+@inject IReportService reportService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+@using System.Security.Claims
+@using Components.Modals
+
+<!-- Container Fluid-->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-success">DataTables</h1>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="index" class="text-success">Home</a></li>
+        <li class="breadcrumb-item">Tables</li>
+        <li class="breadcrumb-item active" aria-current="page">DataTables</li>
+    </ol>
+</div>
+
+
+<SpinLoader IsLoading="isLoading">
+    <LoadingTemplate>
+        <div class="col-12" style="vertical-align:middle">
+            <br /><br />
+            <Chase Center="true" Color="#ffff" Size="70px"></Chase>
+        </div>
+    </LoadingTemplate>
+    <ContentTemplate>
+        @if (FilteredReportList != null)
+        {
+<GridViewTemplate Items="FilteredReportList" ReloadList="IsGridViewFiltered" Title="Reports">
+
+    <GridColumns>
+        <GridColumnTemplatedCompnent ColumnTitle="Project"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Project"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="User"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "User"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Comments"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Comments"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="ContractorName"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Contractor"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Status"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Status"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Completion"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Completion"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Role"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Role"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="DateReported"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "DateReported"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Actions"></GridColumnTemplatedCompnent>
+
+    </GridColumns>
+    <GridRow Context="Report">
+        <td>@Report.ProjectName</td>
+        <td>@Report.User.Trim()</td>
+        <td>@Report.Comments</td>
+        <td>@Report.ContractorName</td>
+        <td>@Report.Status</td>
+        <td>@Report.Completion</td>
+        <td>@Report.Role[0]</td>
+        <td>@Report.DateReported.ToShortDateString()</td>
+        <td>
+            <a @onclick="(()=> DeleteReportModal(Report))"><i class="fas fa-trash fa-1x fa-sm fa-fw text-danger"></i></a>
+            <a @onclick="(()=> OpenReportViewModal(Report))"><i class="fas fa-book-open fa-1x fa-sm fa-fw text-danger"></i></a>
+        </td>
+
+    </GridRow>
+</GridViewTemplate>}
+    </ContentTemplate>
+</SpinLoader>
+
+
+@code { public ReportApiModel Report { get; set; }
+    public List<ReportApiModel> Reports { get; set; }
+    public List<ReportApiModel> FilteredReportList { get; set; }
+    bool isLoading = true;
+    public bool IsGridViewFiltered { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProjects();
+
+    }
+    private async Task LoadProjects()
+    {
+
+        await Task.Delay(500);
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+        Reports = FilteredReportList = await reportService.GetReportsAsync(token);
+        isLoading = false;
+        StateHasChanged();
+
+    }
+
+    [CascadingParameter]
+    public IModalService Modal { get; set; }
+
+
+
+    async Task OpenReportViewModal(ReportApiModel model)
+    {
+
+        var options = new ModalOptions { UseCustomLayout = true, Position = ModalPosition.Center };
+        var parameters = new ModalParameters();
+
+        parameters.Add(nameof(ReportViewModal.Title), "Report");
+        parameters.Add(nameof(ReportViewModal.Report), model);
+        parameters.Add(nameof(ReportViewModal.CssClass), "modal-lg");
+        var modal = Modal.Show<ReportViewModal>("Custom Layout", parameters, options);
+        await modal.Result;
+        await LoadProjects();
+    }
+
+    async Task DeleteReportModal(ReportApiModel model)
+    {
+
+        var options = new ModalOptions { UseCustomLayout = true, Position = ModalPosition.Center };
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(DeleteModal.Message), "Are you sure you want to delete this report!!");
+        parameters.Add(nameof(DeleteModal.Title), "Alert");
+        parameters.Add(nameof(DeleteModal.Report), model);
+        parameters.Add(nameof(DeleteModal.Item), ItemDelete.Report);
+        var modal = Modal.Show<DeleteModal>("Custom Layout", parameters, options);
+        await modal.Result;
+        await LoadProjects();
+    }
+
+    private void OnUserSearchTextChanged(ChangeEventArgs changeEventArgs, string columnTitle)
+    {
+        string searchText = changeEventArgs.Value.ToString();
+        IsGridViewFiltered = true;
+
+        switch (columnTitle)
+        {
+            case "Comments":
+                FilteredReportList = Reports.Where(x => x.Comments.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "Completion":
+                FilteredReportList = Reports.Where(x => x.Completion.ToString().Contains(searchText)).ToList();
+                break;
+            case "ContractorName":
+                FilteredReportList = Reports.Where(x => x.ContractorName.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "DateReported":
+                FilteredReportList = Reports.Where(x => x.DateReported.ToString().Contains(searchText)).ToList();
+                break;
+            case "Project":
+                FilteredReportList = Reports.Where(x => x.ProjectName.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "Status":
+                FilteredReportList = Reports.Where(x => x.Status.ToString().Contains(searchText)).ToList();
+                break;
+            case "User":
+                FilteredReportList = Reports.Where(x => x.User.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+
+            case "Role":
+                FilteredReportList = Reports.Where(x => x.Role[0].ToLower().ToString().Contains(searchText)).ToList();
+                break;
+
+            default:
+                Console.WriteLine("Default case");
+                break;
+        }
+    } }

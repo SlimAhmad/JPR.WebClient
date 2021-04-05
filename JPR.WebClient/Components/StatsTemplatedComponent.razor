@@ -1,0 +1,28 @@
+﻿   <!-- Earnings (Monthly) Card Example -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card h-100">
+        <div class="card-body @CssColor">
+            <div class="row align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-uppercase mb-1">@Title</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">@Estimate</div>
+                    <div class="mt-2 mb-0 text-muted text-xs">
+                        <span class="text-success mr-2"><i class="fa @UpOrDownIcon"></i>@Percentage</span>
+                        <span>@DateToText</span>
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="@FontIcon "></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code { [Parameter] public string Title { get; set; }
+    [Parameter] public string CssColor { get; set; }
+    [Parameter] public string Percentage { get; set; }
+    [Parameter] public string DateToText { get; set; }
+    [Parameter] public string FontIcon { get; set; }
+    [Parameter] public string Estimate { get; set; }
+    [Parameter] public string UpOrDownIcon { get; set; } }

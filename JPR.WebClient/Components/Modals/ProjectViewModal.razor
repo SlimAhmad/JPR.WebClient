@@ -1,0 +1,71 @@
+﻿@inject AuthenticationStateProvider authenticationStateProvider
+@inject IToastService toastService
+@inject IProjectService projectService
+@inject IJSRuntime JS
+@using BrowserInterop.Extensions
+@using BrowserInterop.Geolocation
+@using JPR.WebClient.Components
+
+
+<div class="modal fade show d-block mt-5" tabindex="-1" role="dialog">
+    <div class="modal-backdrop fade show" @onclick="Cancel"></div>
+    <div class="modal-dialog @CssClass " style="z-index: 1050">
+        <!-- Pop it above the backdrop -->
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-dark">
+                <h5 class="modal-title text-white">@Title</h5>
+                <button type="button" class="close bg-transparent" aria-label="Close" @onclick="Close">
+                    <span aria-hidden="true" class="text-danger">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col">
+                        <h5 class="text-body text-capitalize text-black-50">@Project.Title</h5>
+                        <p>@Project.Commissioned.ToLongDateString()</p>
+                    </div>
+
+                </div>
+                <div class="row">
+
+
+                    @foreach (var pics in Project.Pictures)
+                    {
+        <div class="col-sm-3">
+            <div class="card">
+                <div class="card-body">
+                    <img src="@Server/@pics.ImageName" width="120" height="140" />
+                </div>
+            </div>
+
+
+        </div>}
+
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+
+@code { [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; }
+
+    [Parameter]
+    public ProjectsApiModel Project { get; set; }
+
+    public string Server { get; set; } = "https://localhost:5030/Media/Project";
+
+    [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string CssClass { get; set; }
+
+    public async Task Close() => await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+
+    public async Task Cancel() => await BlazoredModal.CancelAsync(); }

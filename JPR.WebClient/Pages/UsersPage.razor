@@ -1,0 +1,173 @@
+﻿@page  "/users"
+@inject IUserService userService
+@inject IRoleService RoleService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+@using System.Security.Claims
+@using Components.Modals
+
+<!-- Container Fluid-->
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-success">DataTables</h1>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="index" class="text-success">Home</a></li>
+        <li class="breadcrumb-item">Tables</li>
+        <li class="breadcrumb-item active" aria-current="page">DataTables</li>
+    </ol>
+</div>
+
+
+
+<SpinLoader IsLoading="isLoading">
+    <LoadingTemplate>
+        <div class="col-12" style="vertical-align:middle">
+            <br /><br />
+            <Chase Center="true" Color="#ffff" Size="70px"></Chase>
+        </div>
+    </LoadingTemplate>
+    <ContentTemplate>
+        <button class="btn" @onclick="(()=> OpenEditUserModal(Person))">
+            <i class="fa fa-user-edit fa-lg fa-fw text-white ml-2 mt-3"></i>
+            <p class="text-white ml-2 mt-1 text-sm-left small text-success">Add a user</p>
+        </button>
+
+        @if (FilteredUserList != null)
+        {
+<GridViewTemplate Items="FilteredUserList" ReloadList="IsGridViewFiltered" Title="Users">
+    <GridColumns>
+        <GridColumnTemplatedCompnent ColumnTitle=""></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Email"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Email"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Firstname"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "FirstName"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="LastName"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "LastName"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Username"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Userame"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Phone Number"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Phone Number"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Role"
+                                     OnSearchTextChanged="@(e => OnUserSearchTextChanged(e, "Role"))"></GridColumnTemplatedCompnent>
+        <GridColumnTemplatedCompnent ColumnTitle="Actions"></GridColumnTemplatedCompnent>
+
+    </GridColumns>
+    <GridRow Context="Person">
+        <td><img src="@url/@Person.ProfileImage" class="img-profile rounded-circle" style="max-width: 40px" /></td>
+        <td>@Person.Email</td>
+        <td>@Person.FirstName</td>
+        <td>@Person.LastName</td>
+        <td>@Person.Username</td>
+        <td>@Person.PhoneNumber</td>
+        <td>@Char.ToUpper(Person.Role[0])@Person.Role.Substring(1)</td>
+        <td>
+            <a @onclick="(()=> DeleteUserModal(Person))"><i class="fas fa-trash fa-1x fa-sm fa-fw text-danger"></i></a>
+            <a @onclick="(()=> OpenEditUserModal(Person))" class="ml-1" data-toggle="modal" data-target="#Modal"> <i class="fa fa-user-edit fa-1x fa-sm fa-fw text-white"></i></a>
+        </td>
+
+    </GridRow>
+</GridViewTemplate>}
+    </ContentTemplate>
+</SpinLoader>
+
+
+@code { public RegisterCredentialsApiModel Person { get; set; }
+    public List<RegisterCredentialsApiModel> User { get; set; }
+    public List<RegisterCredentialsApiModel> FilteredUserList { get; set; }
+    public List<RoleApiModel> Roles { get; set; }
+    bool isLoading = true;
+    public bool IsGridViewFiltered { get; set; } = true;
+    public string url { get; set; } = "https://localhost:5030/Media/Profile";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Person = new RegisterCredentialsApiModel();
+        await LoadUsers();
+        await LoadRoles();
+    }
+
+    private async Task LoadRoles()
+    {
+
+        await Task.Delay(500);
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+        Roles = await RoleService.GetRolesAsync(token);
+
+        StateHasChanged();
+
+    }
+    private async Task LoadUsers()
+    {
+
+        await Task.Delay(500);
+        var token = await ((AuthStateProvider)authenticationStateProvider).GetTokenAsync();
+        User = FilteredUserList = await userService.GetUsers(token);
+        isLoading = false;
+        StateHasChanged();
+
+    }
+
+
+
+    [CascadingParameter] public IModalService Modal { get; set; }
+
+
+
+    async Task OpenEditUserModal(RegisterCredentialsApiModel model)
+    {
+
+        var options = new ModalOptions { UseCustomLayout = true, Position = ModalPosition.Center, ContentScrollable = true };
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(EditUserModal.Title), "User Information");
+        parameters.Add(nameof(EditUserModal.CssClass), "modal-xl");
+        parameters.Add(nameof(EditUserModal.Person), model);
+        parameters.Add(nameof(EditUserModal.Roles), Roles);
+
+        var modal = Modal.Show<EditUserModal>("Custom Layout", parameters, options);
+        await modal.Result;
+        await LoadUsers();
+
+    }
+    async Task DeleteUserModal(RegisterCredentialsApiModel model)
+    {
+
+        var options = new ModalOptions { UseCustomLayout = true, Position = ModalPosition.Center };
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(DeleteModal.Message), "Are you sure you want to delete this user!!");
+        parameters.Add(nameof(DeleteModal.Title), "Alert");
+        parameters.Add(nameof(DeleteModal.Person), model);
+        parameters.Add(nameof(DeleteModal.Item), ItemDelete.User);
+        var modal = Modal.Show<DeleteModal>("Custom Layout", parameters, options);
+        await modal.Result;
+        await LoadUsers();
+    }
+
+    private void OnUserSearchTextChanged(ChangeEventArgs changeEventArgs, string columnTitle)
+    {
+        string searchText = changeEventArgs.Value.ToString();
+        IsGridViewFiltered = true;
+
+        switch (columnTitle)
+        {
+            case "FirstName":
+                FilteredUserList = User.Where(x => x.FirstName.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "Email":
+                FilteredUserList = User.Where(x => x.Email.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "LastName":
+                FilteredUserList = User.Where(x => x.LastName.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "Username":
+                FilteredUserList = User.Where(x => x.Username.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "Role":
+                FilteredUserList = User.Where(x => x.Role.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            case "Phone Number":
+                FilteredUserList = User.Where(x => x.PhoneNumber.ToLower().ToString().Contains(searchText)).ToList();
+                break;
+            default:
+                Console.WriteLine("Default case");
+                break;
+        }
+    } }

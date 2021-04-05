@@ -1,0 +1,31 @@
+﻿<!-- Modal Logout -->
+<div class="modal fade show" id="Modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabelLogout"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabelLogout">@Title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="()=> IsOpened = false">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @ModalBody
+            </div>
+            <div class="modal-footer">
+                @ModalFooter
+            </div>
+        </div>
+    </div>
+</div>
+@code { [Parameter]
+    public string Title { get; set; }
+
+    [Parameter]
+    public RenderFragment ModalBody { get; set; }
+
+    [Parameter]
+    public RenderFragment ModalFooter { get; set; }
+    [Parameter]
+    public bool IsOpened { get; set; }
+    public string CssClass => IsOpened ? "show" : null; }

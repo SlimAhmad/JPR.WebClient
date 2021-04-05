@@ -1,0 +1,32 @@
+﻿@if (EnableMap == true)
+{
+<div>
+    <div>
+        <p class="ml-2">Note: Captures data of your current location <br><span class="text-success font-weight-bold">You have to be on site</span></p>
+        <RadzenGoogleMap Style="height:250px;" Zoom="@Zoom" Center="@(new GoogleMapPosition(){ Lat = 11.088850383148413, Lng = 7.722246264120147})">
+
+            <Markers>
+                <RadzenGoogleMapMarker Title="@Location" Label="@Location"
+                                       Position="@(new GoogleMapPosition(){ Lat = Longitude, Lng = Latitude})" />
+            </Markers>
+        </RadzenGoogleMap>
+    </div>
+</div> }
+else
+{
+<p class="ml-2">Map not available</p>}
+
+@code { [Parameter]
+    public double Longitude { get; set; }
+
+    [Parameter]
+    public double Latitude { get; set; }
+
+    [Parameter]
+    public int Zoom { get; set; }
+
+    [Parameter]
+    public bool EnableMap { get; set; }
+
+    [Parameter]
+    public string Location { get; set; } }
